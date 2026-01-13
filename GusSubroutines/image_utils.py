@@ -123,3 +123,4 @@ def smooth1(Original, Retrieved):
     alpha = 0.55
     beta = 1 - alpha
     return alpha * Original + beta * Retrieved
+
