@@ -9,9 +9,9 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
 setup(
     name="GusSubroutines",
     version="1.0.0",
-    author="Tu Nombre",
-    author_email="tu.email@example.com",
-    description="Paquete de utilidades para procesamiento de imágenes y fase",
+    author="Dr. Carlos Augusto Flores Meneses",
+    author_email="augustoflores94@gmail.com.com",
+    description="Package of utilities for image and phase processing developed by Dr. Augusto Meneses.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/zeekk9/GusSubroutines",
