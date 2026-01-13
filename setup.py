@@ -14,7 +14,7 @@ setup(
     description="Paquete de utilidades para procesamiento de imágenes y fase",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/tuusuario/GusSubroutines",
+    url="https://github.com/zeekk9/GusSubroutines",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
