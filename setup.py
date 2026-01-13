@@ -28,8 +28,8 @@ setup(
     install_requires=requirements,
     keywords="image-processing phase-unwrapping interferometry",
     project_urls={
-        "Bug Tracker": "https://github.com/tuusuario/GusSubroutines/issues",
-        "Documentation": "https://github.com/tuusuario/GusSubroutines/wiki",
-        "Source Code": "https://github.com/tuusuario/GusSubroutines",
+        "Bug Tracker": "https://github.com/zeekk9/GusSubroutines/issues",
+        "Documentation": "https://github.com/zeekk9/GusSubroutines/wiki",
+        "Source Code": "https://github.com/zeekk9/GusSubroutines",
     },
 )
