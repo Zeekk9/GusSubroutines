@@ -10,7 +10,7 @@ setup(
     name="GusSubroutines",
     version="1.0.0",
     author="Dr. Carlos Augusto Flores Meneses",
-    author_email="augustoflores94@gmail.com.com",
+    author_email="augustoflores94@gmail.com",
     description="Package of utilities for image and phase processing developed by Dr. Augusto Meneses.",
     long_description=long_description,
     long_description_content_type="text/markdown",
