@@ -3,6 +3,12 @@ import sys
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
+def progress_bar(current, total, prefix=''):
+    """Imprime una actualización en la misma línea."""
+    msg = f"\r{prefix} {current}/{total} frames..."
+    sys.stdout.write(msg)
+    sys.stdout.flush()
+
 def matshow(position, mat, title):
     """Display matrix with colorbar"""
     plt.subplot(position)
