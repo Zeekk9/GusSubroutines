@@ -11,6 +11,12 @@ def mouse_crop(event, x, y, flags, param):
         print(f"Coordinates of pixel: X: {x}, Y: {y}")
         x_c, y_c = x, y
 
+def rescale(mat, new_min, new_max):
+            m_min, m_max = mat.min(), mat.max()
+            if m_max == m_min: return np.full(mat.shape, new_min) # Evitar división por cero
+            # Normaliza a [0, 1] y luego escala a [new_min, new_max]
+            return (mat - m_min) / (m_max - m_min) * (new_max - new_min) + new_min
+
 def crop_single(image):
     """
     Single interactive crop
