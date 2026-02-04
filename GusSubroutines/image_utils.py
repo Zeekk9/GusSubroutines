@@ -130,3 +130,84 @@ def smooth1(Original, Retrieved):
     beta = 1 - alpha
     return alpha * Original + beta * Retrieved
 
+
+def error_mask(matrix, error_percent=0, method='uniform'):
+    """
+    Aplica ruido estocástico a cualquier matriz (coeficientes, amplitudes, etc.)
+    Retorna la matriz con ruido o la original si error_percent es 0.
+    """
+    # 1. Si no hay error, devolvemos la matriz vacia
+    if error_percent == 0:
+        return np.zeros(np.shape(matrix))
+    
+    shape = np.shape(matrix)
+    # Magnitud media para escalar errores que no son proporcionales punto a punto
+    magnitude = np.mean(np.abs(matrix))
+    
+    # 2. Generar el factor de error según el método
+    if method == 'uniform':
+        # Ruido uniforme basado en un porcentaje del valor promedio
+        error_factor = np.random.uniform(-error_percent/100, error_percent/100, shape)
+        noise = error_factor * magnitude
+    
+    elif method == 'normal':
+        # Ruido gaussiano (normal) con desviación estándar proporcional al porcentaje
+        std = (error_percent/100) * magnitude
+        noise = np.random.normal(0, std, shape)
+    
+    elif method == 'proportional':
+        # El ruido es más fuerte donde la señal es más alta (multiplicativo)
+        # Esto es ideal para ruido de disparo (shot noise)
+        noise = (error_percent/100) * matrix * np.random.randn(*shape)
+    
+    elif method == 'relative':
+        # Ruido uniforme relativo al valor absoluto de cada píxel
+        relative_factor = np.random.uniform(-error_percent/100, error_percent/100, shape)
+        noise = relative_factor * np.abs(matrix)
+    
+    else:
+        return matrix
+
+    # 3. Retornar ruido generado
+    return noise
+
+
+def apply_stochastic_noise(matrix, error_percent=0, method='uniform'):
+    """
+    Aplica ruido estocástico a cualquier matriz (coeficientes, amplitudes, etc.)
+    Retorna la matriz con ruido o la original si error_percent es 0.
+    """
+    # 1. Si no hay error, devolvemos la matriz original intacta
+    if error_percent == 0:
+        return matrix
+    
+    shape = np.shape(matrix)
+    # Magnitud media para escalar errores que no son proporcionales punto a punto
+    magnitude = np.mean(np.abs(matrix))
+    
+    # 2. Generar el factor de error según el método
+    if method == 'uniform':
+        # Ruido uniforme basado en un porcentaje del valor promedio
+        error_factor = np.random.uniform(-error_percent/100, error_percent/100, shape)
+        noise = error_factor * magnitude
+    
+    elif method == 'normal':
+        # Ruido gaussiano (normal) con desviación estándar proporcional al porcentaje
+        std = (error_percent/100) * magnitude
+        noise = np.random.normal(0, std, shape)
+    
+    elif method == 'proportional':
+        # El ruido es más fuerte donde la señal es más alta (multiplicativo)
+        # Esto es ideal para ruido de disparo (shot noise)
+        noise = (error_percent/100) * matrix * np.random.randn(*shape)
+    
+    elif method == 'relative':
+        # Ruido uniforme relativo al valor absoluto de cada píxel
+        relative_factor = np.random.uniform(-error_percent/100, error_percent/100, shape)
+        noise = relative_factor * np.abs(matrix)
+    
+    else:
+        return matrix
+
+    # 3. Retornar la matriz original más el ruido generado
+    return matrix + noise
