@@ -20,7 +20,7 @@ def matshow(position, mat, title):
     
 def Plotting(fig, position, matrix, title, colormap, cbartitle, 
              show_xticks=True, show_yticks=True, phiwrap=False, 
-             customlim=None): # Usamos None por defecto
+             customlim=None, titlesize=35): # Usamos None por defecto
     
     # 1. Manejo de la posición (Soporta 341 o (3, 4, 10))
     if isinstance(position, tuple):
@@ -37,7 +37,7 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle,
         # Si es False o None, escala automáticamente a los datos de la matriz
         im = ax.imshow(matrix, cmap=colormap)
         
-    ax.set_title(title, fontsize=35)
+    ax.set_title(title, fontsize=titlesize)
     ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
     ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
     ax.tick_params(axis='both', labelsize=15, length=0)
