@@ -2,80 +2,71 @@ import cv2
 import os
 import shutil
 
-def video_to_frames(video_path, jpg_quality=85, scale=1.0):
+def video_to_frames(video_path, output_path=None, jpg_quality=85, scale=1.0):
     """
-    Decomposes a video into frames optimized for file size.
+    Decomposes a video into frames.
     
     Args:
-        video_path (str): Path to the input video file (e.g., .avi, .mp4).
-        jpg_quality (int): JPEG quality (1-100, 85 recommended).
-        scale (float): Scaling factor (e.g., 0.5 for 50% smaller dimensions).
+        video_path (str): Path to the input video file.
+        output_path (str): Custom directory to save frames. If None, uses video filename.
+        jpg_quality (int): JPEG quality (1-100).
+        scale (float): Scaling factor.
     """
-    
+    import os
+    import cv2
+
     if not os.path.exists(video_path):
         print(f"Error: File '{video_path}' not found.")
         return
     
-    # Use the filename (without extension) as the output directory
-    output_dir = os.path.splitext(video_path)[0]
+    # Si output_path es None, usa el nombre del video en la raíz actual
+    # Si es una ruta (ej: 'C:/MisFrames'), usará esa.
+    if output_path is None:
+        output_dir = os.path.splitext(os.path.basename(video_path))[0]
+    else:
+        output_dir = output_path
     
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Directory '{output_dir}' created.")
 
     cap = cv2.VideoCapture(video_path)
-    
     if not cap.isOpened():
         print(f"Error: Could not open video '{video_path}'.")
         return
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    print(f"Video: {total_frames} frames @ {fps:.1f} FPS")
-    #print(f'\rCurrent frame: frame_{i}.jpg', end='', flush=True)
-    
     frame_count = 0
     total_size = 0
     
+    print(f"Processing: {total_frames} frames...")
+
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        # OPTION 1: Resize frame if scale is not 1.0
         if scale != 1.0:
             new_width = int(frame.shape[1] * scale)
             new_height = int(frame.shape[0] * scale)
-            frame = cv2.resize(frame, (new_width, new_height), 
-                             interpolation=cv2.INTER_AREA)
+            frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-        # OPTION 2: Convert to grayscale (optional, significantly reduces size)
-        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-        # OPTION 3: Save as JPG with compression
-        frame_name = f"frame_{frame_count}.jpg" # Added padding for better sorting
+        # Usamos :05d para que los nombres sean frame_00001.jpg, esto evita errores de orden
+        frame_name = f"frame_{frame_count:05d}.jpg" 
         full_path = os.path.join(output_dir, frame_name)
         
-        # JPEG compression parameters
         encode_params = [cv2.IMWRITE_JPEG_QUALITY, jpg_quality]
         cv2.imwrite(full_path, frame, encode_params)
         
-        # Track file size
-        file_size = os.path.getsize(full_path)
-        total_size += file_size
-        
+        total_size += os.path.getsize(full_path)
         frame_count += 1
         
         if frame_count % 50 == 0:
-        # El \r al inicio borra visualmente la línea anterior al sobreescribirla
             print(f"\rProcessed {frame_count}/{total_frames} frames...", end='', flush=True)
 
     cap.release()
-    
-    avg_size = total_size / frame_count if frame_count > 0 else 0
-    print(f"\n✅ Completed: {frame_count} frames")
+    print(f"\n✅ Completed: {frame_count} frames in '{output_dir}'")
     print(f"📦 Total size: {total_size/1024/1024:.2f} MB")
-    print(f"📊 Average size per frame: {avg_size/1024:.2f} KB")
 
 
 def count_jpg_files(directory):
