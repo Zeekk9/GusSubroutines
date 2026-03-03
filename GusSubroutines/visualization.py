@@ -20,50 +20,52 @@ def matshow(position, mat, title):
     
 def Plotting(fig, position, matrix, title, colormap, cbartitle, 
              show_xticks=True, show_yticks=True, phiwrap=False, 
-             customlim=None, titlesize=35): # Usamos None por defecto
+             customlim=None, titlesize=35, 
+             xlabel=None, ylabel=None, labelsize=20): # Nuevos parámetros
     
-    # 1. Manejo de la posición (Soporta 341 o (3, 4, 10))
     if isinstance(position, tuple):
         ax = fig.add_subplot(*position)
     else:
         ax = fig.add_subplot(position)
     
-    # 2. Lógica de límites (Custom vs Automático)
     if customlim is not None:
-        # customlim debe ser una lista o tupla: [vmin, vmax]
         vmin, vmax = customlim
         im = ax.imshow(matrix, cmap=colormap, vmin=vmin, vmax=vmax)
     else:
-        # Si es False o None, escala automáticamente a los datos de la matriz
         im = ax.imshow(matrix, cmap=colormap)
         
     ax.set_title(title, fontsize=titlesize)
+    
+    # --- NUEVA LÓGICA DE ETIQUETAS ---
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=labelsize)
+    if ylabel:
+        ax.set_ylabel(ylabel, fontsize=labelsize)
+    # ---------------------------------
+
     ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
     ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
-    ax.tick_params(axis='both', labelsize=15, length=0)
+    ax.tick_params(axis='both', labelsize=18, length=0)
 
     if not show_xticks:
         ax.set_xticks([])
     if not show_yticks:
         ax.set_yticks([])
         
-
     cbar = fig.colorbar(im, ax=ax)
     cbar.set_label(cbartitle, rotation=270, labelpad=20, size=20)
-    # Solo cambiamos los ticks si phiwrap es True
+    
     if phiwrap:
         cbar.ax.tick_params(labelsize=25, length=0)
         cbar.set_ticks([-np.pi, 0, np.pi])
         cbar.set_ticklabels([r'$-\pi$', r'$0$', r'$\pi$'])
     else:
-        # Configuración estándar para los demás
         cbar.ax.tick_params(labelsize=15, length=0)
         cbar.locator = ticker.MaxNLocator(nbins=4)
         cbar.update_ticks()
 
     ax.grid(False)
     return ax
-
 
 def surf(p1, p2, p3, W, title):
     """3D surface plot"""
