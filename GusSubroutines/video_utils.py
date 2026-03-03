@@ -4,23 +4,12 @@ import shutil
 
 def video_to_frames(video_path, output_path=None, jpg_quality=85, scale=1.0):
     """
-    Decomposes a video into frames.
-    
-    Args:
-        video_path (str): Path to the input video file.
-        output_path (str): Custom directory to save frames. If None, uses video filename.
-        jpg_quality (int): JPEG quality (1-100).
-        scale (float): Scaling factor.
+    Decomposes a video into frames with simple numbering (1, 2, 3...).
     """
-    import os
-    import cv2
-
     if not os.path.exists(video_path):
         print(f"Error: File '{video_path}' not found.")
         return
     
-    # Si output_path es None, usa el nombre del video en la raíz actual
-    # Si es una ruta (ej: 'C:/MisFrames'), usará esa.
     if output_path is None:
         output_dir = os.path.splitext(os.path.basename(video_path))[0]
     else:
@@ -51,8 +40,9 @@ def video_to_frames(video_path, output_path=None, jpg_quality=85, scale=1.0):
             new_height = int(frame.shape[0] * scale)
             frame = cv2.resize(frame, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-        # Usamos :05d para que los nombres sean frame_00001.jpg, esto evita errores de orden
-        frame_name = f"frame_{frame_count:05d}.jpg" 
+        # CAMBIO AQUÍ: Eliminamos el :05d para que no use ceros a la izquierda
+        # Si quieres que empiece en 1, usa {frame_count + 1}
+        frame_name = f"frame_{frame_count}.jpg" 
         full_path = os.path.join(output_dir, frame_name)
         
         encode_params = [cv2.IMWRITE_JPEG_QUALITY, jpg_quality]
