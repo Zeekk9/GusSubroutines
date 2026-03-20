@@ -17,7 +17,7 @@ def rescale(mat, new_min, new_max):
             # Normaliza a [0, 1] y luego escala a [new_min, new_max]
             return (mat - m_min) / (m_max - m_min) * (new_max - new_min) + new_min
 
-def crop_single(image):
+def single_cord(image):
     """
     Single interactive crop
     
@@ -44,6 +44,34 @@ def crop_single(image):
 
     return y_c, x_c
 
+def multi_cords(image, ancho, largo, n):
+    """Interactive cropping of multiple regions"""
+    Is = []
+    cord = []
+    alpha = 1  # Contrast control
+    beta = 1   # Brightness control
+    croped = image
+    image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+    
+    for i in range(n):
+        cv2.namedWindow("image", cv2.WINDOW_NORMAL)
+        cv2.setMouseCallback("image", mouse_crop)
+
+        while True:
+            key = cv2.waitKey(2)
+            cv2.imshow("image", image)
+            
+            if key % 256 == 27:
+                cv2.destroyAllWindows()
+                break
+
+        '''Is.append(np.mean(cv2.fastNlMeansDenoising(
+            image[y_c-2*ancho:y_c, x_c-largo:x_c+largo]), axis=2) * 1.0)'''
+        cord.append([y_c, x_c])
+        image[y_c-2*ancho:y_c, x_c-largo:x_c+largo] = 0
+
+    return cord
+
 def crop(image, ancho, largo, n):
     """Interactive cropping of multiple regions"""
     Is = []
@@ -65,13 +93,49 @@ def crop(image, ancho, largo, n):
                 cv2.destroyAllWindows()
                 break
 
-        Is.append(np.mean(cv2.fastNlMeansDenoising(
-            image[y_c-2*ancho:y_c, x_c-largo:x_c+largo]), axis=2) * 1.0)
-        Is.append(np.mean(croped[y_c-2*ancho:y_c, x_c-largo:x_c+largo], axis=2) * 1.0)
+        '''Is.append(np.mean(cv2.fastNlMeansDenoising(
+            image[y_c-2*ancho:y_c, x_c-largo:x_c+largo]), axis=2) * 1.0)'''
+        Is.append(croped[y_c-2*ancho:y_c, x_c-largo:x_c+largo])
         cord.append([y_c, x_c])
         image[y_c-2*ancho:y_c, x_c-largo:x_c+largo] = 0
 
     return Is, cord
+
+
+def single_crop(image, ancho, largo):
+    """Interactive cropping of multiple regions"""
+    Is = []
+    cord = []
+    alpha = 1  # Contrast control
+    beta = 1   # Brightness control
+    croped = image
+    image = cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
+    
+    cv2.namedWindow("image", cv2.WINDOW_NORMAL)
+    cv2.setMouseCallback("image", mouse_crop)
+
+    while True:
+        key = cv2.waitKey(2)
+        cv2.imshow("image", image)
+        
+        if key % 256 == 27:
+            cv2.destroyAllWindows()
+            break
+
+        '''Is.append(np.mean(cv2.fastNlMeansDenoising(
+            image[y_c-2*ancho:y_c, x_c-largo:x_c+largo]), axis=2) * 1.0)'''
+    Is=croped[y_c-2*ancho:y_c, x_c-largo:x_c+largo]
+    image[y_c-2*ancho:y_c, x_c-largo:x_c+largo] = 0
+    
+    while True:
+            key = cv2.waitKey(2)
+            cv2.imshow("image", image)
+            
+            if key % 256 == 27:
+                cv2.destroyAllWindows()
+                break
+
+    return Is
 
 def ROI(image_name):
     """Select Region of Interest"""
