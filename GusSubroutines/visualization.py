@@ -21,7 +21,7 @@ def matshow(position, mat, title):
 def Plotting(fig, position, matrix, title, colormap, cbartitle, 
              show_xticks=True, show_yticks=True, phiwrap=False, 
              customlim=None, titlesize=35, 
-             xlabel=None, ylabel=None, labelsize=20): # Nuevos parámetros
+             xlabel=None, ylabel=None, labelsize=20, tickssize=18): # Nuevos parámetros
     
     if isinstance(position, tuple):
         ax = fig.add_subplot(*position)
@@ -45,7 +45,7 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle,
 
     ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
     ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
-    ax.tick_params(axis='both', labelsize=18, length=0)
+    ax.tick_params(axis='both', labelsize=tickssize, length=0)
 
     if not show_xticks:
         ax.set_xticks([])
