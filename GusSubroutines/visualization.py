@@ -56,7 +56,7 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle,
     cbar.set_label(cbartitle, rotation=270, labelpad=20, size=20)
     
     if phiwrap:
-        cbar.ax.tick_params(labelsize=25, length=0)
+        cbar.ax.tick_params(labelsize=20, length=0)
         cbar.set_ticks([-np.pi, 0, np.pi])
         cbar.set_ticklabels([r'$-\pi$', r'$0$', r'$\pi$'])
     else:
