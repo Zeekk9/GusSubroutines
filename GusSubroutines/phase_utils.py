@@ -105,3 +105,132 @@ def itoh_2D(W):
 def wrap(W):
     """Wrap phase to [-π, π]"""
     return np.arctan2(np.sin(W), np.cos(W))
+
+def simple_align(phi_rec, phi_ref):
+    """
+    Encuentra automáticamente si la fase está invertida y el offset constante.
+    """
+    errors = []
+    for sign in [1, -1]:
+        # Calculamos la diferencia compleja para obtener el offset promedio
+        # diff_exp = exp(i * ref) / exp(i * sign * rec)
+        diff_complex = np.exp(1j * phi_ref) / np.exp(1j * (sign * phi_rec))
+        offset = np.angle(np.mean(diff_complex))
+
+        # Aplicamos el candidato
+        phi_cand = np.arctan2(np.sin(sign * phi_rec + offset),
+                              np.cos(sign * phi_rec + offset))
+
+        # Error cuadrático medio circular
+        error = np.mean(1 - np.cos(phi_ref - phi_cand))
+        errors.append((error, phi_cand, offset, sign))
+
+    # Seleccionamos la combinación con menor error
+    best = min(errors, key=lambda x: x[0])
+    return best[1]
+
+def align_offset(phi_recovered, phi_theoretical):
+    """
+    Alinea la fase recuperada con la fase teórica removiendo el offset constante.
+    Asume que el desplazamiento es constante en toda la imagen.
+    """
+    # Calcula el offset promedio entre las dos fases
+    offset = np.mean(phi_recovered - phi_theoretical)
+
+    # Remueve el offset
+    phi_aligned = phi_recovered - offset
+
+    return phi_aligned
+
+
+def align_phase_fast(phi_rec, phi_ref):
+    """
+    Alineación ultra-rápida basada en estadística circular.
+    Calcula el offset óptimo analíticamente sin iteraciones.
+    """
+    # 1. Representación compleja de la diferencia: exp(i * (ref - rec))
+    # Esto extrae el desfase relativo pixel a pixel
+    delta_complex = np.exp(1j * phi_ref) * np.conj(np.exp(1j * phi_rec))
+    
+    # 2. El ángulo del promedio de todos los fasores es el offset global
+    offset = np.angle(np.mean(delta_complex))
+    
+    # 3. Aplicar el offset y re-envolver
+    return np.arctan2(np.sin(phi_rec + offset), np.cos(phi_rec + offset))
+
+
+def align_phase_simple(phi_rec, phi_ref):
+    """
+    Alineación analítica usando el promedio de la diferencia compleja.
+    Calcula el offset exacto y detecta el signo automáticamente.
+    """
+    def get_best_offset(p_rec, p_ref):
+        # Representación compleja de la diferencia: exp(i * (ref - rec))
+        diff_complex = np.exp(1j * p_ref) / np.exp(1j * p_rec)
+        # El ángulo del promedio es el offset óptimo (piston)
+        offset = np.angle(np.mean(diff_complex))
+        return offset
+
+    # Probar signo positivo
+    off_pos = get_best_offset(phi_rec, phi_ref)
+    phi_pos = np.arctan2(np.sin(phi_rec + off_pos), np.cos(phi_rec + off_pos))
+    err_pos = np.mean(1 - np.cos(phi_ref - phi_pos))
+
+    # Probar signo negativo
+    off_neg = get_best_offset(-phi_rec, phi_ref)
+    phi_neg = np.arctan2(np.sin(-phi_rec + off_neg), np.cos(-phi_rec + off_neg))
+    err_neg = np.mean(1 - np.cos(phi_ref - phi_neg))
+
+    # Retornar la que minimice el error circular
+    return phi_pos if err_pos < err_neg else phi_neg
+
+
+def align_phase_robust(phi_rec, phi_ref, steps=360):
+    """
+    Alineación por fuerza bruta. Útil para validar resultados 
+    cuando el signo o el offset son muy erráticos.
+    """
+    best_phi = np.copy(phi_rec)
+    min_error = np.inf
+    
+    # Probamos ambos signos (fase directa e invertida)
+    for sign in [1, -1]:
+        offsets = np.linspace(-np.pi, np.pi, steps)
+        for off in offsets:
+            # Aplicamos transformación circular
+            phi_cand = np.arctan2(np.sin(sign * phi_rec + off), 
+                                  np.cos(sign * phi_rec + off))
+            
+            # Error basado en la distancia cordal (robusto a saltos de 2pi)
+            error = np.mean(1 - np.cos(phi_ref - phi_cand))
+            
+            if error < min_error:
+                min_error = error
+                best_phi = phi_cand
+                
+    return best_phi
+
+
+
+def apply_phase_noise(data, t=0, noise_lvl=0.0, drift_lvl=0.0, seed=None):
+    N = data.shape[0]
+    if seed is not None:
+        np.random.seed(seed)
+
+    noise_lvl_percent = noise_lvl/100
+    drift_lvl_percent = drift_lvl/100
+
+    # Si la data es 1D (un vector de píxeles)
+    if data.ndim == 1:
+        white_noise = np.random.normal(0, noise_lvl_percent, N)
+        x = np.linspace(-1, 1, N)
+        drift_lvl_percent = np.random.normal(0, noise_lvl_percent)
+        drift = drift_lvl_percent * np.sin(x + t*0.01)
+    else:
+        # Si es 2D (la imagen completa)
+        white_noise = np.random.normal(0, noise_lvl_percent, (N, N))
+        x = np.linspace(-1, 1, N)
+        X, Y = np.meshgrid(x, x)
+        drift = drift_lvl_percent * np.sin(X + t*0.1) * np.cos(Y - t*0.05)
+
+    return data + white_noise + drift
