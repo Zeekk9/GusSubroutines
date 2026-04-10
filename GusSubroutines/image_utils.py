@@ -236,42 +236,52 @@ def error_mask(matrix, error_percent=0, method='uniform'):
     return noise
 
 
+El error que estás experimentando (IndexError: too many indices) suele ocurrir cuando intentas usar desempaquetado de formas o indexación de matrices (*shape) en funciones que esperan dimensiones específicas, o cuando el objeto matrix no es un arreglo de NumPy.
+
+Para que sea totalmente compatible con 1D (tus perfiles de fase) y 2D (tus imágenes de interferometría), he ajustado el uso de *shape y asegurado que el ruido se genere respetando la dimensionalidad exacta del input.
+
+Aquí tienes la versión actualizada para tus subrutinas:
+
+Python
+import numpy as np
+
 def apply_stochastic_noise(matrix, error_percent=0, method='uniform'):
     """
-    Aplica ruido estocástico a cualquier matriz (coeficientes, amplitudes, etc.)
-    Retorna la matriz con ruido o la original si error_percent es 0.
+    Aplica ruido estocástico a cualquier arreglo (1D o 2D).
+    Ideal para análisis de sensibilidad en Ar, Ap y coeficientes.
     """
-    # 1. Si no hay error, devolvemos la matriz original intacta
+    # 1. Validación de entrada y caso base
     if error_percent == 0:
         return matrix
     
-    shape = np.shape(matrix)
-    # Magnitud media para escalar errores que no son proporcionales punto a punto
+    # Aseguramos que sea un array de numpy para evitar errores de indexación
+    matrix = np.asanyarray(matrix)
+    shape = matrix.shape
+    
+    # Magnitud media para escalar el ruido
     magnitude = np.mean(np.abs(matrix))
     
-    # 2. Generar el factor de error según el método
+    # 2. Generar el ruido según el método
     if method == 'uniform':
-        # Ruido uniforme basado en un porcentaje del valor promedio
-        error_factor = np.random.uniform(-error_percent/100, error_percent/100, shape)
-        noise = error_factor * magnitude
+        # Ruido uniforme basado en la magnitud promedio
+        noise = np.random.uniform(-error_percent/100, error_percent/100, size=shape) * magnitude
     
     elif method == 'normal':
-        # Ruido gaussiano (normal) con desviación estándar proporcional al porcentaje
+        # Ruido gaussiano (normal)
         std = (error_percent/100) * magnitude
-        noise = np.random.normal(0, std, shape)
+        noise = np.random.normal(0, std, size=shape)
     
     elif method == 'proportional':
-        # El ruido es más fuerte donde la señal es más alta (multiplicativo)
-        # Esto es ideal para ruido de disparo (shot noise)
-        noise = (error_percent/100) * matrix * np.random.randn(*shape)
+        # Ruido multiplicativo (más fuerte donde hay más señal)
+        # Usamos np.random.standard_normal(size=shape) para ser compatibles con 1D/2D
+        noise = (error_percent/100) * matrix * np.random.standard_normal(size=shape)
     
     elif method == 'relative':
-        # Ruido uniforme relativo al valor absoluto de cada píxel
-        relative_factor = np.random.uniform(-error_percent/100, error_percent/100, shape)
-        noise = relative_factor * np.abs(matrix)
+        # Ruido relativo al valor absoluto local de cada punto
+        noise = np.random.uniform(-error_percent/100, error_percent/100, size=shape) * np.abs(matrix)
     
     else:
         return matrix
 
-    # 3. Retornar la matriz original más el ruido generado
+    # 3. Retornar con el mismo tipo de dato original
     return matrix + noise
