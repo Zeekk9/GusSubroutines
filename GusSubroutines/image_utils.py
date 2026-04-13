@@ -235,16 +235,6 @@ def error_mask(matrix, error_percent=0, method='uniform'):
     # 3. Retornar ruido generado
     return noise
 
-
-El error que estás experimentando (IndexError: too many indices) suele ocurrir cuando intentas usar desempaquetado de formas o indexación de matrices (*shape) en funciones que esperan dimensiones específicas, o cuando el objeto matrix no es un arreglo de NumPy.
-
-Para que sea totalmente compatible con 1D (tus perfiles de fase) y 2D (tus imágenes de interferometría), he ajustado el uso de *shape y asegurado que el ruido se genere respetando la dimensionalidad exacta del input.
-
-Aquí tienes la versión actualizada para tus subrutinas:
-
-Python
-import numpy as np
-
 def apply_stochastic_noise(matrix, error_percent=0, method='uniform'):
     """
     Aplica ruido estocástico a cualquier arreglo (1D o 2D).
