@@ -9,8 +9,6 @@ def progress_bar(current, total, prefix=''):
     msg = f"\r{prefix} {current}/{total} frames..."
     sys.stdout.write(msg)
     sys.stdout.flush()
-
-w
     
 def Plotting(fig, position, matrix, title, colormap, cbartitle, 
              show_xticks=True, show_yticks=True, phiwrap=False, 
