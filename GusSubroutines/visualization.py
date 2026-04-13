@@ -10,13 +10,7 @@ def progress_bar(current, total, prefix=''):
     sys.stdout.write(msg)
     sys.stdout.flush()
 
-def matshow(position, mat, title):
-    """Display matrix with colorbar"""
-    plt.subplot(position)
-    plt.imshow(mat, cmap='gist_heat')
-    plt.title(title, fontsize=30)
-    plt.axis('off')
-    plt.colorbar()
+w
     
 def Plotting(fig, position, matrix, title, colormap, cbartitle, 
              show_xticks=True, show_yticks=True, phiwrap=False, 

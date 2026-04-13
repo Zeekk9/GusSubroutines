@@ -235,43 +235,40 @@ def error_mask(matrix, error_percent=0, method='uniform'):
     # 3. Retornar ruido generado
     return noise
 
+
 def apply_stochastic_noise(matrix, error_percent=0, method='uniform'):
     """
-    Aplica ruido estocástico a cualquier arreglo (1D o 2D).
-    Ideal para análisis de sensibilidad en Ar, Ap y coeficientes.
+    Aplica ruido estocástico a cualquier arreglo (1D, 2D o escalar).
+    Actualizada para evitar IndexError en perfiles 1D.
     """
-    # 1. Validación de entrada y caso base
+    # 1. Caso base: si no hay error, devolvemos original
     if error_percent == 0:
         return matrix
     
-    # Aseguramos que sea un array de numpy para evitar errores de indexación
+    # Aseguramos que sea un array de numpy para manejar las dimensiones correctamente
     matrix = np.asanyarray(matrix)
     shape = matrix.shape
     
-    # Magnitud media para escalar el ruido
+    # Magnitud media para escalar errores
     magnitude = np.mean(np.abs(matrix))
     
-    # 2. Generar el ruido según el método
+    # 2. Generar el ruido usando el argumento 'size' (evita el error de índices)
     if method == 'uniform':
-        # Ruido uniforme basado en la magnitud promedio
         noise = np.random.uniform(-error_percent/100, error_percent/100, size=shape) * magnitude
     
     elif method == 'normal':
-        # Ruido gaussiano (normal)
         std = (error_percent/100) * magnitude
         noise = np.random.normal(0, std, size=shape)
     
     elif method == 'proportional':
-        # Ruido multiplicativo (más fuerte donde hay más señal)
-        # Usamos np.random.standard_normal(size=shape) para ser compatibles con 1D/2D
+        # Reemplazamos np.random.randn(*shape) por standard_normal(size=shape)
         noise = (error_percent/100) * matrix * np.random.standard_normal(size=shape)
     
     elif method == 'relative':
-        # Ruido relativo al valor absoluto local de cada punto
         noise = np.random.uniform(-error_percent/100, error_percent/100, size=shape) * np.abs(matrix)
     
     else:
         return matrix
 
-    # 3. Retornar con el mismo tipo de dato original
+    # 3. Retornar la matriz original más el ruido
     return matrix + noise
