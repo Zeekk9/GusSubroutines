@@ -45,16 +45,18 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle,
         ax.set_yticks([])
         
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label(cbartitle, rotation=270, labelpad=20, size=20)
     
     if phiwrap:
-        cbar.ax.tick_params(labelsize=20, length=0)
         cbar.set_ticks([-np.pi, 0, np.pi])
         cbar.set_ticklabels([r'$-\pi$', r'$0$', r'$\pi$'])
+        cbar.ax.tick_params(labelsize=18, length=0, pad=3) # 'pad' controla distancia tick-barra
+        # Un pad de 10-12 suele bastar para que 'rad' no flote lejos
+        cbar.set_label(cbartitle, rotation=270, labelpad=12, size=20)
     else:
         cbar.ax.tick_params(labelsize=15, length=0)
         cbar.locator = ticker.MaxNLocator(nbins=4)
         cbar.update_ticks()
+        cbar.set_label(cbartitle, rotation=270, labelpad=20, size=20)
 
     ax.grid(False)
     return ax
