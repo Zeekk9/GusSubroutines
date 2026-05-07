@@ -10,10 +10,11 @@ def progress_bar(current, total, prefix=''):
     sys.stdout.write(msg)
     sys.stdout.flush()
     
-def Plotting(fig, position, matrix, title, colormap, cbartitle, 
+def Plotting(fig, position, matrix, title, colormap, cbartitle=None, 
              show_xticks=True, show_yticks=True, phiwrap=False, 
              customlim=None, titlesize=35, 
-             xlabel=None, ylabel=None, labelsize=20, tickssize=18): # Nuevos parámetros
+             xlabel=None, ylabel=None, labelsize=20, tickssize=18,
+             show_cbar=True): # Agregamos el parámetro por default True
     
     if isinstance(position, tuple):
         ax = fig.add_subplot(*position)
@@ -28,12 +29,10 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle,
         
     ax.set_title(title, fontsize=titlesize)
     
-    # --- NUEVA LÓGICA DE ETIQUETAS ---
     if xlabel:
         ax.set_xlabel(xlabel, fontsize=labelsize)
     if ylabel:
         ax.set_ylabel(ylabel, fontsize=labelsize)
-    # ---------------------------------
 
     ax.yaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
     ax.xaxis.set_major_locator(ticker.MaxNLocator(nbins=4))
@@ -44,19 +43,21 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle,
     if not show_yticks:
         ax.set_yticks([])
         
-    cbar = fig.colorbar(im, ax=ax)
-    
-    if phiwrap:
-        cbar.set_ticks([-np.pi, 0, np.pi])
-        cbar.set_ticklabels([r'$-\pi$', r'$0$', r'$\pi$'])
-        cbar.ax.tick_params(labelsize=18, length=0, pad=3) # 'pad' controla distancia tick-barra
-        # Un pad de 10-12 suele bastar para que 'rad' no flote lejos
-        cbar.set_label(cbartitle, rotation=270, labelpad=12, size=20)
-    else:
-        cbar.ax.tick_params(labelsize=15, length=0)
-        cbar.locator = ticker.MaxNLocator(nbins=4)
-        cbar.update_ticks()
-        cbar.set_label(cbartitle, rotation=270, labelpad=20, size=20)
+    # --- NUEVA LÓGICA PARA LA COLORBAR ---
+    if show_cbar:
+        cbar = fig.colorbar(im, ax=ax)
+        
+        if phiwrap:
+            cbar.set_ticks([-np.pi, 0, np.pi])
+            cbar.set_ticklabels([r'$-\pi$', r'$0$', r'$\pi$'])
+            cbar.ax.tick_params(labelsize=18, length=0, pad=3) 
+            cbar.set_label(cbartitle, rotation=270, labelpad=12, size=20)
+        else:
+            cbar.ax.tick_params(labelsize=15, length=0)
+            cbar.locator = ticker.MaxNLocator(nbins=4)
+            cbar.update_ticks()
+            cbar.set_label(cbartitle, rotation=270, labelpad=20, size=20)
+    # -------------------------------------
 
     ax.grid(False)
     return ax
