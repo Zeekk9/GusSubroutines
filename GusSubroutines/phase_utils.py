@@ -31,7 +31,7 @@ def apply_q(p, ww):
     q_p = np.diff(ww_dx2, axis=1) + np.diff(ww_dy2, axis=0)
     return q_p
 
-def phase_unwrap(psi, weight=None):
+def unwrap_ghilia(psi, weight=None):
     """2D phase unwrapping"""
     if weight is None:
         dx = np.concatenate([np.zeros((psi.shape[0], 1)), wrap_to_pi(np.diff(psi, axis=1)), np.zeros((psi.shape[0], 1))], axis=1)
@@ -80,7 +80,7 @@ def phase_unwrap(psi, weight=None):
             k += 1
     return phi
 
-def itoh_2D(W):
+def unwrap_itoh(W):
     """Itoh 2D phase unwrapping"""
     renglon, columna = W.shape
     phi = np.zeros(W.shape)
@@ -234,3 +234,23 @@ def apply_phase_noise(data, t=0, noise_lvl=0.0, drift_lvl=0.0, seed=None):
         drift = drift_lvl_percent * np.sin(X + t*0.1) * np.cos(Y - t*0.05)
 
     return data + white_noise + drift
+
+
+def QWP(angle, error=0):
+    "QWP Matrix jones"
+    qwp = np.exp(-1j * np.pi/4) * np.array([
+        [np.cos(angle+error)**2 + 1j*np.sin(angle+error)**2,
+         (1 - 1j)*np.sin(angle+error)*np.cos(angle+error)],
+        [(1 - 1j)*np.sin(angle+error)*np.cos(angle+error),
+         1j*np.cos(angle+error)**2 + np.sin(angle+error)**2]
+    ])
+
+    return qwp
+
+def polarizer(angle=0, error=0):
+    """Polarization Matrix jones"""
+    polarizer = np.array([
+        [np.cos(angle+error)**2, np.cos(angle+error) * np.sin(angle+error)],
+        [np.cos(angle+error) * np.sin(angle+error), np.sin(angle+error)**2]
+    ])
+    return polarizer
