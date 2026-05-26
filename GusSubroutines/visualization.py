@@ -91,3 +91,74 @@ def show():
         print("Sistema operativo no soportado para maximización.")
     
     plt.show()
+    
+def save_to_vtk(matrix, filename, data_name="ScalarField", dx=1.0, dy=1.0):
+    """
+    Exporta una matriz de datos 2D (imágenes, fases, interferogramas) a formato VTK
+    para ser visualizada y procesada en 3D dentro de ParaView.
+    """
+    if not filename.lower().endswith(('.vtk', '.vts')):
+        filename_base = filename
+    else:
+        filename_base = filename.rsplit('.', 1)[0]
+
+    # Intentar usar el método binario rápido (pyevtk)
+    try:
+        from pyevtk.hl import gridToVTK
+        
+        # Orientación correcta para ParaView
+        matrix_ready = np.flipud(matrix)
+        
+        ny, nx = matrix_ready.shape
+        nz = 1 
+        
+        # Crear mallas espaciales
+        x = np.linspace(0, (nx - 1) * dx, nx)
+        y = np.linspace(0, (ny - 1) * dy, ny)
+        z = np.zeros(nz)
+        
+        X = np.zeros((nx, ny, nz))
+        Y = np.zeros((nx, ny, nz))
+        Z = np.zeros((nx, ny, nz))
+        
+        for i in range(nx):
+            for j in range(ny):
+                X[i, j, 0] = x[i]
+                Y[i, j, 0] = y[j]
+                Z[i, j, 0] = z[0]
+                
+        # Adaptar dimensiones al estándar VTK (Eje Z dummy)
+        data_3d = matrix_ready.T[:, :, np.newaxis]
+        
+        # SOLUCIÓN ESTABLE: Forzar paso contiguo por memoria RAM a todas las matrices
+        X = np.ascontiguousarray(X)
+        Y = np.ascontiguousarray(Y)
+        Z = np.ascontiguousarray(Z)
+        data_3d = np.ascontiguousarray(data_3d)
+        
+        # Guardar archivo estructurado XML binario (.vts)
+        gridToVTK(filename_base, X, Y, Z, pointData={data_name: data_3d})
+        print(f"✅ Archivo estructurado binario guardado como: {filename_base}.vts")
+
+    # Método alternativo nativo (ASCII .vtk) si pyevtk no está mapeado
+    except ImportError:
+        matrix_ready = np.flipud(matrix)
+        ny, nx = matrix_ready.shape
+        
+        if not filename.endswith('.vtk'):
+            filename = filename_base + '.vtk'
+            
+        with open(filename, 'w') as f:
+            f.write("# vtk DataFile Version 3.0\n")
+            f.write(f"Exported from GusSubroutines - {data_name}\n")
+            f.write("ASCII\n")
+            f.write("DATASET STRUCTURED_POINTS\n")
+            f.write(f"DIMENSIONS {nx} {ny} 1\n")
+            f.write(f"ORIGIN 0 0 0\n")
+            f.write(f"SPACING {dx} {dy} 1.0\n")
+            f.write(f"POINT_DATA {nx * ny}\n")
+            f.write(f"SCALARS {data_name} float 1\n")
+            f.write("LOOKUP_TABLE default\n")
+            np.savetxt(f, matrix_ready.flatten(), fmt='%f')
+            
+        print(f"⚠️ Guardado en formato ASCII heredado como: {filename}")
