@@ -43,7 +43,7 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle=None,
     if not show_yticks:
         ax.set_yticks([])
         
-    # --- NUEVA LÓGICA PARA LA COLORBAR ---
+
     if show_cbar:
         cbar = fig.colorbar(im, ax=ax)
         
