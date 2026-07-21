@@ -101,7 +101,6 @@ def crop(image, ancho, largo, n):
 
     return Is, cord
 
-
 def single_crop(image, ancho, largo):
     """Interactive cropping of multiple regions"""
     Is = []
@@ -137,31 +136,81 @@ def single_crop(image, ancho, largo):
 
     return Is
 
-def ROI(image_name):
-    """Select Region of Interest"""
+import cv2
+
+import cv2
+
+def ROI(image_input, max_display_size=800):
+    """
+    Permite seleccionar una Región de Interés (ROI) manteniendo la relación de aspecto
+    tanto en la imagen principal como en la vista previa del recorte.
+    
+    :param image_input: Imagen de entrada (Matriz NumPy)
+    :param max_display_size: Tamaño máximo en píxeles (ancho o alto) para la ventana
+    """
     x_start, y_start, x_end, y_end = 0, 0, 0, 0
     cropping = False
     
+    oriImage = image_input.copy()
+    image = image_input.copy()
+
+    # 1. Calcular tamaño de la ventana principal manteniendo ASPECT RATIO
+    h, w = image.shape[:2]
+    aspect_ratio = w / h
+
+    if w > h:
+        win_w = max_display_size
+        win_h = int(max_display_size / aspect_ratio)
+    else:
+        win_h = max_display_size
+        win_w = int(max_display_size * aspect_ratio)
+
     def mouse_crop_local(event, x, y, flags, param):
         nonlocal x_start, y_start, x_end, y_end, cropping
         
         if event == cv2.EVENT_LBUTTONDOWN:
             x_start, y_start, x_end, y_end = x, y, x, y
             cropping = True
+
         elif event == cv2.EVENT_MOUSEMOVE:
             if cropping:
                 x_end, y_end = x, y
+
         elif event == cv2.EVENT_LBUTTONUP:
             x_end, y_end = x, y
             cropping = False
-            print(f'Coordenadas: x_start={x_start}, y_start={y_start}, '
-                  f'x_end={x_end}, y_end={y_end}')
 
-    image = image_name.copy()
-    oriImage = image.copy()
+            x1, x2 = min(x_start, x_end), max(x_start, x_end)
+            y1, y2 = min(y_start, y_end), max(y_start, y_end)
 
+            roi_w = x2 - x1
+            roi_h = y2 - y1
+
+            print(f'Coordenadas ROI: x_start={x1}, y_start={y1}, x_end={x2}, y_end={y2}')
+
+            # Si hay una selección válida, calculamos el aspect ratio de la ROI
+            if roi_w > 0 and roi_h > 0:
+                roi = oriImage[y1:y2, x1:x2]
+                
+                # 2. Redimensionar la ventana "Cropped" manteniendo SU propio aspect ratio
+                roi_aspect = roi_w / roi_h
+                crop_max_size = 500  # Límite de tamaño para la ventana emergente
+                
+                if roi_w > roi_h:
+                    crop_win_w = crop_max_size
+                    crop_win_h = int(crop_max_size / roi_aspect)
+                else:
+                    crop_win_h = crop_max_size
+                    crop_win_w = int(crop_max_size * roi_aspect)
+
+                cv2.namedWindow("Cropped", cv2.WINDOW_NORMAL)
+                cv2.resizeWindow("Cropped", crop_win_w, crop_win_h)
+                cv2.imshow("Cropped", roi)
+
+    # Configuración de la ventana principal
     cv2.namedWindow("image", cv2.WINDOW_NORMAL)
     cv2.setMouseCallback("image", mouse_crop_local)
+    cv2.resizeWindow('image', win_w, win_h)  # Redimensionado proporcional
 
     while True:
         i = image.copy()
@@ -173,11 +222,14 @@ def ROI(image_name):
             cv2.rectangle(i, (x_start, y_start), (x_end, y_end), (255, 0, 0), 2)
             cv2.imshow("image", i)
 
-        if key % 256 == 27:
+        if key % 256 == 27:  # Salir con ESC
             cv2.destroyAllWindows()
             break
-        
-    return x_start, y_start, x_end, y_end
+
+    x_min, x_max = min(x_start, x_end), max(x_start, x_end)
+    y_min, y_max = min(y_start, y_end), max(y_start, y_end)
+
+    return x_min, y_min, x_max, y_max
 
 def data_norm(data):
     """Normalize data to [0, 1]"""
@@ -272,3 +324,137 @@ def apply_stochastic_noise(matrix, error_percent=0, method='uniform'):
 
     # 3. Retornar la matriz original más el ruido
     return matrix + noise
+
+def importing(image_path):
+    image = cv2.imread(image_path)
+    if image is None:
+        raise FileNotFoundError(f"No se pudo cargar la imagen en: {image_path}")
+    
+    image_float = image.astype(np.float64) / 255.0  # Normaliza a [0.0, 1.0]
+    
+    if len(image_float.shape) == 3 and image_float.shape[2] == 3:
+        return np.mean(image_float, axis=2)
+        
+    return image_float
+
+def ensure_grayscale(image):
+    if len(image.shape) == 3 and image.shape[2] == 3:
+        # Convertimos a gris y luego a float para preservar precisión numérica
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        return gray.astype(np.float64)
+    return image.astype(np.float64)
+
+def ROI_circular(image_input, max_display_size=800):
+    """
+    Selecciona un ROI circular mediante clic en el centro y arrastre para definir el radio.
+    Muestra la vista previa con fondo negro dentro de la ROI circular.
+    
+    :param image_input: Matriz de la imagen (float64 o uint8).
+    :param max_display_size: Tamaño máximo de ventana conservando Aspect Ratio.
+    :return: (crop, mask, coords)
+             - crop: Imagen recortada (fuera del círculo = np.nan).
+             - mask: Máscara booleana (True dentro del círculo).
+             - coords: (y1, y2, x1, x2) coordenadas en la imagen original.
+    """
+    x_center, y_center = 0, 0
+    radius = 0
+    selecting = False
+    
+    oriImage = image_input.copy()
+    image = image_input.copy()
+
+    # Redimensionado proporcional de la ventana principal
+    h, w = image.shape[:2]
+    aspect_ratio = w / h
+    if w > h:
+        win_w = max_display_size
+        win_h = int(max_display_size / aspect_ratio)
+    else:
+        win_h = max_display_size
+        win_w = int(max_display_size * aspect_ratio)
+
+    # Preparar copia para visualización en OpenCV (Normalizada a uint8 de 0-255)
+    img_disp = image.copy()
+    if img_disp.dtype != np.uint8:
+        # Asegurar rango 0-255 para visualización limpia
+        img_disp = cv2.normalize(img_disp, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+
+    def mouse_circle_local(event, x, y, flags, param):
+        nonlocal x_center, y_center, radius, selecting
+        
+        # 1. Clic izquierdo: Define el centro
+        if event == cv2.EVENT_LBUTTONDOWN:
+            x_center, y_center = x, y
+            radius = 0
+            selecting = True
+
+        # 2. Arrastre: Define el radio dinámico
+        elif event == cv2.EVENT_MOUSEMOVE and selecting:
+            radius = int(np.sqrt((x - x_center)**2 + (y - y_center)**2))
+
+        # 3. Soltar clic: Finaliza la selección y muestra el recorte circular
+        elif event == cv2.EVENT_LBUTTONUP and selecting:
+            radius = int(np.sqrt((x - x_center)**2 + (y - y_center)**2))
+            selecting = False
+
+            if radius > 0:
+                # Bounding box del círculo
+                x1 = max(0, x_center - radius)
+                x2 = min(w, x_center + radius)
+                y1 = max(0, y_center - radius)
+                y2 = min(h, y_center + radius)
+
+                # Extraer para la vista previa desde la versión uint8
+                crop_disp = img_disp[y1:y2, x1:x2].copy()
+                
+                # Crear máscara circular
+                grid_y, grid_x = np.ogrid[:crop_disp.shape[0], :crop_disp.shape[1]]
+                c_y, c_x = y_center - y1, x_center - x1
+                mask_preview = (grid_x - c_x)**2 + (grid_y - c_y)**2 <= radius**2
+                
+                # Poner en 0 (negro) lo que esté fuera del radio en la vista previa
+                crop_disp[~mask_preview] = 0
+
+                cv2.namedWindow("Cropped Circular", cv2.WINDOW_NORMAL)
+                cv2.resizeWindow("Cropped Circular", 500, 500)
+                cv2.imshow("Cropped Circular", crop_disp)
+
+    # Ventana principal
+    cv2.namedWindow("image", cv2.WINDOW_NORMAL)
+    cv2.setMouseCallback("image", mouse_circle_local)
+    cv2.resizeWindow('image', win_w, win_h)
+
+    # Convertir img_disp a BGR solo para dibujar la guía azul/roja
+    img_bgr = cv2.cvtColor(img_disp, cv2.COLOR_GRAY2BGR) if len(img_disp.shape) == 2 else img_disp.copy()
+
+    while True:
+        i = img_bgr.copy()
+        key = cv2.waitKey(2)
+        
+        if selecting and radius > 0:
+            # Dibujar punto central rojo y circunferencia azul
+            cv2.circle(i, (x_center, y_center), 3, (0, 0, 255), -1)
+            cv2.circle(i, (x_center, y_center), radius, (255, 0, 0), 2)
+            cv2.imshow("image", i)
+        else:
+            cv2.imshow("image", img_bgr)
+
+        if key % 256 == 27:  # Salir con tecla ESC
+            cv2.destroyAllWindows()
+            break
+
+    # Construir el recorte final con la precisión matemática original (float64)
+    x1 = max(0, x_center - radius)
+    x2 = min(w, x_center + radius)
+    y1 = max(0, y_center - radius)
+    y2 = min(h, y_center + radius)
+
+    crop = oriImage[y1:y2, x1:x2].copy()
+    grid_y, grid_x = np.ogrid[:crop.shape[0], :crop.shape[1]]
+    c_y, c_x = y_center - y1, x_center - x1
+    mask = (grid_x - c_x)**2 + (grid_y - c_y)**2 <= radius**2
+
+    # Asignar NaN a la región exterior para Matplotlib / VES
+    crop[~mask] = np.nan
+
+    return crop, mask, (y1, y2, x1, x2)
