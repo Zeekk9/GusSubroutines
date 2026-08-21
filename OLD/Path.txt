@@ -1,0 +1,3 @@
+C:\Users\augus\anaconda3\Lib\site-packages\GusSubroutines
+
+/opt/anaconda3/lib/python3.11/site-packages/GusSubroutines

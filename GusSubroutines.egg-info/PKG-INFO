@@ -1,0 +1,31 @@
+Metadata-Version: 2.1
+Name: GusSubroutines
+Version: 1.0.0
+Summary: Paquete de utilidades para procesamiento de imágenes y fase
+Home-page: https://github.com/zeekk9/GusSubroutines
+Author: Tu Nombre
+Author-email: tu.email@example.com
+Project-URL: Bug Tracker, https://github.com/tuusuario/GusSubroutines/issues
+Project-URL: Documentation, https://github.com/tuusuario/GusSubroutines/wiki
+Project-URL: Source Code, https://github.com/tuusuario/GusSubroutines
+Keywords: image-processing phase-unwrapping interferometry
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
+Classifier: Topic :: Scientific/Engineering :: Image Processing
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Requires-Dist: numpy>=1.19.0
+Requires-Dist: matplotlib>=3.3.0
+Requires-Dist: opencv-python>=4.5.0
+Requires-Dist: scipy>=1.6.0
+
+# GusSubroutines
+
+Package of utilities for image and phase processing developed by Dr. Augusto Meneses.
+## Instalación
+
+```bash
+pip install git+https://github.com/zeek9/GusSubroutines.git
