@@ -14,7 +14,7 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle=None,
              show_xticks=True, show_yticks=True, phiwrap=False, 
              customlim=None, titlesize=35, 
              xlabel=None, ylabel=None, labelsize=20, tickssize=18,
-             show_cbar=True, cbarlabelsize=15): # Agregamos el parámetro por default True
+             show_cbar=True, cbarlabelsize=15,cbartitlesize=20): # Agregamos el parámetro por default True
     
     if isinstance(position, tuple):
         ax = fig.add_subplot(*position)
@@ -50,13 +50,13 @@ def Plotting(fig, position, matrix, title, colormap, cbartitle=None,
         if phiwrap:
             cbar.set_ticks([-np.pi, 0, np.pi])
             cbar.set_ticklabels([r'$-\pi$', r'$0$', r'$\pi$'])
-            cbar.ax.tick_params(labelsize=18, length=0, pad=3) 
-            cbar.set_label(cbartitle, rotation=270, labelpad=12, size=20)
+            cbar.ax.tick_params(labelsize=cbarlabelsize, length=0, pad=3) 
+            cbar.set_label(cbartitle, rotation=270, labelpad=12, size=cbartitlesize)
         else:
             cbar.ax.tick_params(labelsize=cbarlabelsize, length=0)
             cbar.locator = ticker.MaxNLocator(nbins=4)
             cbar.update_ticks()
-            cbar.set_label(cbartitle, rotation=270, labelpad=20, size=20)
+            cbar.set_label(cbartitle, rotation=270, labelpad=20, size=cbartitlesize)
     # -------------------------------------
 
     ax.grid(False)
