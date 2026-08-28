@@ -18,7 +18,7 @@ def rescale(mat, new_min, new_max):
         return np.full(mat.shape, new_min)
     return (mat - m_min) / (m_max - m_min) * (new_max - new_min) + new_min
 
-def _prepare_display_image(image, alpha=2.0, beta=1.0):
+def _prepare_display_image(image, alpha=1.0, beta=1.0):
     """
     Ajusta el brillo y contraste de la imagen para visualización interactiva.
     - alpha: Controla el contraste (valores > 1 aumentan el contraste).
@@ -200,11 +200,14 @@ def crop(image, ancho, largo, n):
 def multi_cords_center(image, largo, ancho, n):
     """
     Selección interactiva de múltiples regiones centradas en el clic.
+    El primer ROI define Y; en los siguientes solo cambia X.
     """
     cord = []
     display_image = _prepare_display_image(image)
     if len(display_image.shape) == 2:
         display_image = cv2.cvtColor(display_image, cv2.COLOR_GRAY2BGR)
+
+    fixed_y = None  # Almacena el centro en Y fijado en la primera selección
 
     for i in range(n):
         local_yc, local_xc = -1, -1
@@ -213,7 +216,9 @@ def multi_cords_center(image, largo, ancho, n):
         def mouse_callback(event, x, y, flags, param):
             nonlocal local_yc, local_xc, has_selection
             if event == cv2.EVENT_LBUTTONDOWN:
-                local_yc, local_xc = y, x
+                # Si ya se fijó fixed_y, usamos esa altura; de lo contrario, la del clic
+                local_yc = fixed_y if fixed_y is not None else y
+                local_xc = x
                 has_selection = True
                 print(f"ROI Centrado {i+1}/{n} -> Centro en Y={local_yc}, X={local_xc}")
 
@@ -223,10 +228,15 @@ def multi_cords_center(image, largo, ancho, n):
 
         while True:
             temp_img = display_image.copy()
+            
+            # Dibujar una guía horizontal en la coordenada Y fijada para facilitar la alineación
+            if fixed_y is not None:
+                cv2.line(temp_img, (0, fixed_y), (temp_img.shape[1], fixed_y), (255, 0, 0), 1)
+
             if has_selection:
                 y1, y2 = local_yc - largo, local_yc + largo
                 x1, x2 = local_xc - ancho, local_xc + ancho
-                cv2.rectangle(temp_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.rectangle(temp_img, (x1, y1), (x2, y2), (0, 255, 0), 1)
                 cv2.circle(temp_img, (local_xc, local_yc), 3, (0, 0, 255), -1)
 
             cv2.imshow(win_name, temp_img)
@@ -234,6 +244,11 @@ def multi_cords_center(image, largo, ancho, n):
 
             if key == 27:  # ESC
                 if has_selection:
+                    # Guardar el valor de Y en la primera iteración
+                    if fixed_y is None:
+                        fixed_y = local_yc
+                        print(f"🔒 Altura Y fijada globalmente en: {fixed_y}")
+
                     cord.append([local_yc, local_xc])
                     
                     y1, y2 = local_yc - largo, local_yc + largo
