@@ -212,20 +212,20 @@ def align_phase_robust(phi_rec, phi_ref, steps=360):
 
 
 
-def apply_phase_noise(data, t=0, noise_lvl=0.0, drift_lvl=0.0, seed=None):
+def apply_phase_noise(data, t=1, noise_lvl=0.0, drift_lvl=0.0, seed=None):
     N = data.shape[0]
     if seed is not None:
         np.random.seed(seed)
 
-    noise_lvl_percent = noise_lvl/100
-    drift_lvl_percent = drift_lvl/100
+    noise_lvl_percent = noise_lvl/10
+    drift_lvl_percent = drift_lvl/10
 
     # Si la data es 1D (un vector de píxeles)
     if data.ndim == 1:
         white_noise = np.random.normal(0, noise_lvl_percent, N)
         x = np.linspace(-1, 1, N)
         drift_lvl_percent = np.random.normal(0, noise_lvl_percent)
-        drift = drift_lvl_percent * np.sin(x + t*0.01)
+        drift = drift_lvl_percent * np.sin(x + t*0.1)
     else:
         # Si es 2D (la imagen completa)
         white_noise = np.random.normal(0, noise_lvl_percent, (N, N))

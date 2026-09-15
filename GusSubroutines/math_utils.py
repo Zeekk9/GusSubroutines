@@ -52,7 +52,7 @@ def radtograd(r):
     """Radians to degrees"""
     return r * 180 / np.pi
 
-def prom_filter(M):
+'''def prom_filter(M):
     """Simple 3x3 average filter"""
     x, y = M.shape
     M_filter = np.zeros((x-1, y-1))
@@ -65,7 +65,23 @@ def prom_filter(M):
                     Sum += M[i+k, j+l]
                     if k == 2 and l == 2:
                         M_filter[i+1, j+1] = Sum / 9
-    return M_filter[1:x-1, 1:y-1]
+    return M_filter[1:x-1, 1:y-1]'''
+
+
+def prom_filter(M):
+    """Filtro promedio 3x3 manual con padding para preservar dimensiones"""
+    x, y = M.shape
+    # Añadimos un borde de 1 píxel replicando el valor del límite ('edge')
+    M_padded = np.pad(M, pad_width=1, mode='edge')
+    M_filter = np.zeros((x, y), dtype=np.float64)
+    
+    for i in range(x):
+        for j in range(y):
+            # Extraemos la ventana 3x3 directamente mediante slicing
+            window = M_padded[i:i+3, j:j+3]
+            M_filter[i, j] = np.mean(window)
+            
+    return M_filter
 
 def calculate_phase_rms_error(original_matrix, recovered_matrix):
     """RMS error for phase matrices (handles 2π ambiguity)"""
