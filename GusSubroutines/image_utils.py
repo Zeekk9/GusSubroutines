@@ -316,21 +316,29 @@ def single_crop(image, ancho, largo):
 
 def ROI(image_input, max_display_size=800):
     """
-    Selección interactiva de ROI libre rectangular mediante arrastre.
+    Selección interactiva de ROI mediante un único arrastre (click -> drag -> release).
+    Muestra la vista previa al instante y permite confirmar con ESC.
     """
     x_start, y_start, x_end, y_end = 0, 0, 0, 0
     cropping = False
     has_selection = False
 
     oriImage = image_input.copy()
-    image = _prepare_display_image(image_input)
-    if len(image.shape) == 2:
-        image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+    h_orig, w_orig = oriImage.shape[:2]
 
-    h, w = image.shape[:2]
-    aspect_ratio = w / h
+    # Prepara imagen de despliegue
+    image_disp = _prepare_display_image(image_input)
+    if len(image_disp.shape) == 2:
+        image_disp = cv2.cvtColor(image_disp, cv2.COLOR_GRAY2BGR)
 
-    if w > h:
+    h_disp, w_disp = image_disp.shape[:2]
+
+    # Escalado de coordenadas entre ventana e imagen real
+    scale_x = w_orig / float(w_disp)
+    scale_y = h_orig / float(h_disp)
+
+    aspect_ratio = w_disp / h_disp
+    if w_disp > h_disp:
         win_w = max_display_size
         win_h = int(max_display_size / aspect_ratio)
     else:
@@ -340,41 +348,59 @@ def ROI(image_input, max_display_size=800):
     def mouse_crop_local(event, x, y, flags, param):
         nonlocal x_start, y_start, x_end, y_end, cropping, has_selection
 
+        # 1. Iniciar arrastre
         if event == cv2.EVENT_LBUTTONDOWN:
             x_start, y_start, x_end, y_end = x, y, x, y
             cropping = True
+            has_selection = False
 
+        # 2. Arrastrando
         elif event == cv2.EVENT_MOUSEMOVE:
             if cropping:
                 x_end, y_end = x, y
 
+        # 3. Soltar el botón (Un solo evento finaliza la selección)
         elif event == cv2.EVENT_LBUTTONUP:
-            x_end, y_end = x, y
-            cropping = False
+            if cropping:
+                x_end, y_end = x, y
+                cropping = False
 
-            x1, x2 = min(x_start, x_end), max(x_start, x_end)
-            y1, y2 = min(y_start, y_end), max(y_start, y_end)
+                x1_disp, x2_disp = min(x_start, x_end), max(x_start, x_end)
+                y1_disp, y2_disp = min(y_start, y_end), max(y_start, y_end)
 
-            roi_w = x2 - x1
-            roi_h = y2 - y1
+                x1 = int(x1_disp * scale_x)
+                x2 = int(x2_disp * scale_x)
+                y1 = int(y1_disp * scale_y)
+                y2 = int(y2_disp * scale_y)
 
-            if roi_w > 0 and roi_h > 0:
-                has_selection = True
-                roi = oriImage[y1:y2, x1:x2]
-                
-                roi_aspect = roi_w / roi_h
-                crop_max_size = 500
-                
-                if roi_w > roi_h:
-                    crop_win_w = crop_max_size
-                    crop_win_h = int(crop_max_size / roi_aspect)
-                else:
-                    crop_win_h = crop_max_size
-                    crop_win_w = int(crop_max_size * roi_aspect)
+                roi_w = x2 - x1
+                roi_h = y2 - y1
 
-                cv2.namedWindow("Cropped Preview", cv2.WINDOW_NORMAL)
-                cv2.resizeWindow("Cropped Preview", crop_win_w, crop_win_h)
-                cv2.imshow("Cropped Preview", roi)
+                if roi_w > 0 and roi_h > 0:
+                    has_selection = True
+                    roi = oriImage[y1:y2, x1:x2]
+
+                    # Normalización automática para float64
+                    roi_preview = roi.copy()
+                    if roi_preview.dtype in [np.float64, np.float32]:
+                        roi_preview = cv2.normalize(
+                            roi_preview, None, 0, 255, cv2.NORM_MINMAX
+                        ).astype(np.uint8)
+
+                    roi_aspect = roi_w / float(roi_h)
+                    crop_max_size = 500
+
+                    if roi_w > roi_h:
+                        crop_win_w = crop_max_size
+                        crop_win_h = int(crop_max_size / roi_aspect)
+                    else:
+                        crop_win_h = crop_max_size
+                        crop_win_w = int(crop_max_size * roi_aspect)
+
+                    # Despliegue inmediato de la vista previa
+                    cv2.namedWindow("Cropped Preview", cv2.WINDOW_NORMAL)
+                    cv2.resizeWindow("Cropped Preview", crop_win_w, crop_win_h)
+                    cv2.imshow("Cropped Preview", roi_preview)
 
     win_name = "ROI Selection (Arrastre | ESC para confirmar)"
     cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
@@ -382,26 +408,34 @@ def ROI(image_input, max_display_size=800):
     cv2.resizeWindow(win_name, win_w, win_h)
 
     while True:
-        i = image.copy()
-        key = cv2.waitKey(20) % 256
+        i = image_disp.copy()
 
+        # Dibujar recuadro si está en proceso o si ya fue seleccionado
         if cropping or has_selection:
             x1, x2 = min(x_start, x_end), max(x_start, x_end)
             y1, y2 = min(y_start, y_end), max(y_start, y_end)
             cv2.rectangle(i, (x1, y1), (x2, y2), (255, 0, 0), 2)
-            cv2.imshow(win_name, i)
-        else:
-            cv2.imshow(win_name, image)
 
-        if key == 27:  # ESC
+        cv2.imshow(win_name, i)
+
+        # Disminuimos el delay a 1 ms para refrescar sin latencia de clicks
+        key = cv2.waitKey(1) & 0xFF
+
+        if key == 27:  # Presionar ESC para confirmar
             if has_selection:
                 cv2.destroyAllWindows()
                 break
             else:
-                print("⚠️ Selecciona una región antes de presionar ESC para confirmar.")
+                print("⚠️ Selecciona una región antes de presionar ESC.")
 
-    x_min, x_max = min(x_start, x_end), max(x_start, x_end)
-    y_min, y_max = min(y_start, y_end), max(y_start, y_end)
+    # Retorno exacto de coordenadas mapeadas a la imagen original
+    x1_disp, x2_disp = min(x_start, x_end), max(x_start, x_end)
+    y1_disp, y2_disp = min(y_start, y_end), max(y_start, y_end)
+
+    x_min = int(x1_disp * scale_x)
+    x_max = int(x2_disp * scale_x)
+    y_min = int(y1_disp * scale_y)
+    y_max = int(y2_disp * scale_y)
 
     return x_min, y_min, x_max, y_max
 
@@ -500,9 +534,7 @@ def ROI_circular(image_input, max_display_size=800):
 
     return crop, mask, (y1, y2, x1, x2)
 
-# =================================================================
-# FUNCIONES AUXILIARES MATEMÁTICAS Y DE IMAGEN
-# =================================================================
+
 
 def data_norm(data):
     """Normaliza datos al rango [0, 1]"""
